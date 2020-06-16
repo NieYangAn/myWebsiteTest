@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
-    <script src="./lib/vue.js"></script>
     <script type="text/javascript">
         _linkedin_partner_id = "2098434";
         window._linkedin_data_partner_ids = window._linkedin_data_partner_ids || [];
@@ -24,54 +23,7 @@
 </head>
 
 <body>
-
-    <template id='tmp1'>
-        <div>
-            <h1>這是子元素 --- {{parentmsg}}</h1>
-            <input type="button" value="向父组件传递消息" v-on:click="sendMsg">
-        </div>
-    </template>
-
-    <div id="app">
-        <com1 :parentmsg="msg" v-on:func="getMsgFromSon"></com1>
-    </div>
-
-
-    <script>
-        var com1 =
-        {
-            template: '#tmp1',
-            data() {
-                return {
-                    msg: '子组件data'
-                }
-            },
-            props: ['parentmsg'],
-            methods: {
-                sendMsg() {
-                    this.$emit('func', this.msg)
-                }
-            }
-        }
-
-        var vm = new Vue({
-            el: '#app',
-            data: {
-                msg: '父組件中的數據，爸爸有一百塊錢',
-                msgFromSon: ''
-            },
-            methods: {
-                getMsgFromSon(data) {
-                    this.msgFromSon = data
-                    console.log(this.msgFromSon)
-                }
-            },
-            components: {
-                com1
-            }
-        });
-    </script>
-
+    <h1>Hello World</h1>
 </body>
 
 </html>
