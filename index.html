@@ -10,7 +10,15 @@
     
     <script>var clicky_site_ids = clicky_site_ids || []; clicky_site_ids.push(101278959);</script>
     <script async src="//static.getclicky.com/js"></script>
-    <script>clicky.goal( '10', '9.95' );</script>
+    <script>
+        var clicky_custom = clicky_custom || {};
+        clicky_custom.visitor = {
+            username: 'bobjones',
+            email: 'bob@jones.com'
+        };
+        clicky.goal( '10', '9.95' );
+    </script>
+    
   
 </head>
 
