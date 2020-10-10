@@ -48,5 +48,315 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     <button id="carousel">botton2</button>
     <button class="moving-ads">botton3</button>
 </body>
+    <script>
+    // 查询同类元素路径
+    function querySimilarElePath(el) {
+        var orgPath = queryCssPath(el);
+        var firstPath = orgPath.slice(0, orgPath.lastIndexOf(":nth-of-type"));
+        var lastPath = orgPath.slice(orgPath.lastIndexOf(")") + 1);
+        if (orgPath.lastIndexOf(":nth-of-type") !== -1) {
+            return firstPath + lastPath;
+        } else {
+            return undefined;
+        }
+    }
 
+    // 同类元素参数范围
+    function querySimilarEleRangePath(el) {
+        var orgPath = queryCssPath(el);
+        var firstPath = orgPath.slice(0, orgPath.lastIndexOf(":nth-of-type"));
+        if (orgPath.lastIndexOf(":nth-of-type") !== -1) {
+            return firstPath;
+        } else {
+            return undefined;
+        }
+    }
+
+    // 查询css路径
+    function queryCssPath(el) {
+        // 同级节点比较
+        function compareSameLevelEl(el) {
+            var sameObj = {
+                currNodeSite: 1,
+                sameEls: [],
+                uniqClass: "",
+                sameClass: ""
+            }
+            // 所有兄弟节点
+            var childElNode = el.parentNode.children;
+            // 查询同类型兄弟节点
+            var sameElNode = el.previousElementSibling;
+            // 查询兄弟节点
+            var sibElNode = el.previousElementSibling;
+            // 兄弟节点所有类名
+            var sibClasses = [];
+            // 记录当前元素于所有兄弟节点的位置
+            var thisElIndex = 0;
+
+            // 定位次元素在父类所有子元素的index
+            for (var i = 0; i < childElNode.length; i++) {
+                if (sibElNode) {
+                    thisElIndex++;
+                    sibElNode = sibElNode.previousElementSibling;
+                }
+            }
+
+            // 遍历所有此元素的同类元素
+            for (var i = 0; i < childElNode.length; i++) {
+                // 当前元素父节点的所有子元素class
+                var childClass = childElNode[i].className.replace(AVOID_VT_CLASS, "").split(' ');
+                // 当前选中元素class并去重
+                var thisClass = Array.from(new Set(el.className.replace(AVOID_VT_CLASS, "").split(' ')));
+
+                // 取除本身以外的所有sibling的类名
+                if (thisElIndex !== i) {
+                    Array.prototype.push.apply(sibClasses, childClass);
+                }
+
+                // 记录所有同类型兄弟节点放入sameEls数组
+                if (childElNode[i].nodeName.toLowerCase() === selector) {
+                    sameObj.sameEls.push(childElNode[i]);
+                }
+                // 定位此元素在同类元素中的位置   指定类型元素的第n个
+                if (sameElNode && (sameElNode.nodeName.toLowerCase() === selector)) {
+                    sameObj.currNodeSite++;
+                    sameElNode = sameElNode.previousElementSibling;
+                } else if (sameElNode) {
+                    sameElNode = sameElNode.previousElementSibling;
+                }
+            }
+
+            sameObj.uniqClass = findAvailableClass(thisClass, sibClasses).uniq;
+            sameObj.sameClass = findAvailableClass(thisClass, sibClasses).same;
+            return sameObj;
+        }
+
+        // 选取类名: 类名唯一时取唯一类名，否则取重复类名
+        function findAvailableClass(thClass, classes) {
+            var className = {
+                uniq: "",
+                same: ""
+            }
+
+            for (var i = 0; i < thClass.length; i++) {
+                if (thClass[i] !== "") {
+                    if (classes.indexOf(thClass[i]) !== -1) {
+                        className.same = thClass[i];
+                    } else {
+                        className.uniq = thClass[i];
+                    }
+                }
+            }
+
+            return className;
+        }
+
+        // 从右往左遍历原数组，原数组打散，分到每个类型的节点数组里
+        function splitOriginPathArr(originPathArr, objArr, pathArrsObj) {
+            for (var i = originPathArr.length - 1; i >= 0; i--) {
+                objArr[i] = {
+                    item: originPathArr[i],
+                    index: i
+                }
+                // 如果有id，必为首节点（外层进行了截断），有且只有一个
+                if (originPathArr[i].indexOf("#") !== -1) {
+                    pathArrsObj.idNode.push(objArr[i]);
+                } else if (originPathArr[i].indexOf(":nth-of-type") !== -1) {
+                    pathArrsObj.nthArr.push(objArr[i]);
+                } else if (originPathArr[i].indexOf(".") !== -1) {
+                    pathArrsObj.classArr.push(objArr[i]);
+                } else {
+                    pathArrsObj.nodeArr.push(objArr[i]);
+                }
+            }
+        }
+
+        // 判断前后两个节点的关系“  ”或“ > ”
+        function confirmConnector(prevIndex, nextIndex) {
+            if (prevIndex === nextIndex - 1) {
+                return " > "
+            } else {
+                return "  "
+            }
+        }
+
+        // 将新路径数组拼接成字符串
+        function concatNewPath(pathArr) {
+            var newPath = pathArr[0] ? pathArr[0].item : "";
+            for (var i = 0; i < pathArr.length - 1; i++) {
+                newPath = newPath + confirmConnector(pathArr[i].index, pathArr[i + 1].index) + pathArr[i + 1].item
+            }
+            return newPath;
+        }
+
+        // nth节点是关键，且关联同类元素，须遍历完，因此可以抽出；之后的id、class、node是一边插入一边判断唯一后跳出，因此不做抽象
+        function buildNthNodesPath(pathArrsObj, leafNode, newPath, newPathArr) {
+            // 有nth节点 且 nth数组的第一项不是叶子节点
+            if (pathArrsObj.nthArr[0] && pathArrsObj.nthArr[0].index !== leafNode.index || !pathArrsObj.nthArr[0]) {
+                newPathArr.unshift(leafNode);
+            }
+
+            // 循环将nth节点插进数组
+            for (var i = 0; i < pathArrsObj.nthArr.length; i++) {
+                newPathArr.unshift(pathArrsObj.nthArr[i]);
+            }
+
+            newPath = concatNewPath(newPathArr);
+            return newPath
+        }
+
+        // 判断路径是否唯一 且 长度大于3
+        function approvedSelectorPath(newPath) {
+            var arrOfNewPath = newPath.replace('>', "").split("  ");
+            if (document.querySelectorAll(newPath).length === 1 && arrOfNewPath.length >= 3) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        // 简化路径
+        function simplifyPath(path) {
+            console.log(path)
+            // 根据原始path数组建立一个新数组
+            var originPathArr = path.slice();
+            // 用来记录名称和index的对象数组
+            var objArr = [];
+            // 新路径的数组对象，用来存放nth节点数组、class节点数组、node节点数组、id节点数组
+            var pathArrsObj = {
+                nthArr: [],
+                classArr: [],
+                nodeArr: [],
+                idNode: []
+            };
+            // 返回的简化后的新路径
+            var newPath = "";
+            var newPathArr = []
+            // 用来连接节点与节点之间的符号“  ”或“ > ”
+            var connector = "";
+            // 叶子节点
+            var leafNode = {
+                item: originPathArr[originPathArr.length - 1],
+                index: originPathArr.length - 1
+            };
+
+            //如果叶子节点是id节点，直接取id
+            if (leafNode && leafNode.item.indexOf("#") !== -1) {
+                return newPath = path.join("");
+            }
+
+            console.log("[nyaaaa] leafNode:");
+            console.log(leafNode);
+
+            // 从右往左遍历原数组，原数组打散，分到每个类型的节点数组里
+            splitOriginPathArr(originPathArr, objArr, pathArrsObj);
+
+            console.log("[nyaaaa] pathArrsObj:");
+            console.log(pathArrsObj);
+
+            // 首轮链接叶子节点和nth节点
+            newPath = buildNthNodesPath(pathArrsObj, leafNode, newPath, newPathArr);
+
+            if (approvedSelectorPath(newPath)) {
+                return newPath;
+            };
+
+
+            // 当原path提取nth-of-type后路径仍不唯一，需要往空隙间添加class节点或node节点
+            console.log("最终路径仍不唯一:" + newPath);
+            console.log(document.querySelectorAll(newPath));
+
+            // 插入id节点
+            if (pathArrsObj.idNode.length > 0) {
+                newPathArr.unshift(pathArrsObj.idNode[0]);
+                newPath = concatNewPath(newPathArr);
+                if (approvedSelectorPath(newPath)) {
+                    return newPath;
+                };
+            }
+
+            var newPathArrForNode = newPathArr.slice();
+
+            // 插入class节点
+            for (var i = 0; i < pathArrsObj.classArr.length; i++) {
+                // 与nth节点位置进行比较，在适当位置插入
+                for (var j = newPathArr.length - 1; j >= 0; j--) {
+                    if (pathArrsObj.classArr[i].index < newPathArr[j].index) {
+                        newPathArr.splice(j, 0, pathArrsObj.classArr[i])
+                    }
+                }
+                newPath = concatNewPath(newPathArr);
+                if (approvedSelectorPath(newPath)) {
+                    return newPath;
+                };
+            }
+
+            // 或插入node节点
+            for (var i = 0; i < pathArrsObj.nodeArr.length; i++) {
+                // 与nth节点位置进行比较，在适当位置插入
+                for (var j = newPathArrForNode.length - 1; j >= 0; j--) {
+                    if (pathArrsObj.nodeArr[i].index < newPathArrForNode[j].index) {
+                        newPathArrForNode.splice(j, 0, pathArrsObj.nodeArr[i])
+                    }
+                }
+                newPath = concatNewPath(newPathArrForNode);
+                if (approvedSelectorPath(newPath)) {
+                    return newPath;
+                };
+            }
+
+            // 或插入class和node节点
+            for (var i = 0; i < pathArrsObj.nodeArr.length; i++) {
+                // 与nth节点位置进行比较，在适当位置插入
+                for (var j = newPathArr.length - 1; j >= 0; j--) {
+                    if (pathArrsObj.nodeArr[i].index < newPathArr[j].index) {
+                        newPathArr.splice(j, 0, pathArrsObj.nodeArr[i])
+                    }
+                }
+                newPath = concatNewPath(newPathArr);
+                if (approvedSelectorPath(newPath)) {
+                    return newPath;
+                };
+            }
+
+            // 如果仍不唯一，基本是body的子节点，直接用原路径
+            newPath = path.join(" > ");
+            console.log("都这样了还不唯一,只能:" + newPath);
+            return newPath;
+        }
+
+        var path = [];
+        if (!(el instanceof Element)) {
+            return;
+        }
+
+        while (el.nodeType === Node.ELEMENT_NODE) {
+            var selector = el.nodeName.toLowerCase();
+
+            if (el.id) {
+                // 存在ID 直接返回ID作为首节点
+                selector = '#' + el.id;
+                path.unshift(selector);
+                break;
+            } else {
+                var someObj = compareSameLevelEl(el)
+
+                if (someObj.uniqClass) {
+                    selector += ('.' + someObj.uniqClass);
+                } else if (someObj.sameEls.length > 1) {
+                    if (someObj.sameClass) {
+                        selector += ('.' + someObj.sameClass);
+                    }
+                    selector += (':nth-of-type(' + someObj.currNodeSite + ')');
+                }
+
+                path.unshift(selector);
+                el = el.parentNode;
+            }
+        }
+
+        return simplifyPath(path);
+
+    };
+    </script>
 </html>
