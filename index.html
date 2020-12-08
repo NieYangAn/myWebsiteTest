@@ -8,29 +8,13 @@
     <title>Document</title>
 	
 	<script type="text/javascript">
-
-		Conversify = window.Conversify || [];
-		Conversify.pagetype = "product";
-		Conversify.product = {id:621, stock: 3};
-		window.CONVERSIFY_MSG_VARS = {greeting: 'Welcome back, Alice!'};
-
-	</script>
-
-       
-   	<script type="application/javascript">
-
-		<!-- Conversify API code -->
-	    Conversify = window.Conversify || [];
-	    Conversify.api_key = "d954dad72a3d000d90655fe0d44189b8";
-
-	    (function(d,e,c,cn,f,cfy,p) {
-	        f=d.cookie.split(cn)[1];f=f?f.split(';')[0]:'';
-	        p=c.product&& c.product.id?c.product.id:'';
-	        cfy=d.createElement("script");cfy.type="text/javascript";cfy.async=true;
-	        cfy.src='//js.conversify.com/v2/'+e(c.api_key)+'.js?pt='+e(c.pagetype)+'&ut='+e(f)+'&rf='+e(d.referrer||'')+'&p='+e(p);
-	        (d.getElementsByTagName('head')[0]||d.getElementsByTagName('body')[0]).appendChild(cfy);
-	    })(document, window.encodeURIComponent, Conversify, "__conversify_uid=");
-
+	  window._mfq = window._mfq || [];
+	  (function() {
+	    var mf = document.createElement("script");
+	    mf.type = "text/javascript"; mf.defer = true;
+	    mf.src = "//cdn.mouseflow.com/projects/064eab4a-c564-4be4-b561-4edfc74cffd4.js";
+	    document.getElementsByTagName("head")[0].appendChild(mf);
+	  })();
 	</script>
 
 </head>
