@@ -1,7 +1,37 @@
-// 查询同类元素参数路径
+// 计算同类元素的父元素
+  function querySimEleParent(list) {
+    var parentNode = undefined;
+    var paramList = Array.prototype.slice.call(list);
+    // list 可能有纵向三个、横向三个或纵横九个
+    // 遍历第一个元素的parent
+    while(paramList[0] && paramList[0].parentNode) {
+      // 遍历list里的元素
+      var hasSameParent = true;
+      for (var x = 0; x < paramList.length; x ++) {
+        // 必须全部都等时，才是最终的parent
+        for (var y = 1; y < paramList.length - 1; y ++) {
+          if (paramList[x].parentNode !== paramList[y].parentNode) {
+            hasSameParent = false;
+          }
+        }
+        if (hasSameParent) {
+          parentNode = paramList[x].parentNode;
+          return parentNode;
+        }
+      }
+
+      for (var z = 0; z < paramList.length; z ++) {
+        paramList[z] = paramList[z].parentNode;
+      }
+    }
+    
+    return parentNode;
+  }
+
+  // 查询同类元素参数路径
   function querySimEleParaPath(path, rangePath) {
     var orgPath = path;
-    var lastPath = orgPath.slice(rangePath.length);
+    var lastPath = orgPath.indexOf(rangePath) === 0 ? orgPath.slice(rangePath.length) : undefined;
     var simEleParaChildPath = '';
     // 当埋点元素于range相同时，两个路径由于取法不同会出错，做同化处理
     if (lastPath === undefined) {
@@ -16,7 +46,7 @@
     } else {
         simEleParaChildPath = lastPath.slice(lastPath.indexOf(")") + 1);
     }
-    
+
     return {
         simElePath: rangePath + simEleParaChildPath,
     };
@@ -338,14 +368,14 @@
       }
 
       var pathStr = path.join(' > ');
-      try{
-          document.querySelectorAll(pathStr);
-          // 当且仅当class内含有“\”时，document.querySelectorAll(pathStr).length === 0，直接抛异常。不然代码本身不抛
-          if(document.querySelectorAll(pathStr).length === 0) {
+        try{
+            document.querySelectorAll(pathStr);
+            // 当且仅当class内含有“\”时，document.querySelectorAll(pathStr).length === 0，直接抛异常。不然代码本身不抛
+            if(document.querySelectorAll(pathStr).length === 0) {
+              throw pathStr;
+            }
+            return simplifyPath(path);
+        } catch (exp){
             throw pathStr;
-          }
-          return simplifyPath(path);
-      } catch (exp){
-          throw pathStr;
-      }
+        }
   };
