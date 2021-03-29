@@ -1,4 +1,4 @@
-// 计算同类元素的父元素
+ // 计算同类元素的父元素
   function querySimEleParent(list) {
     var parentNode = undefined;
     var paramList = Array.prototype.slice.call(list);
@@ -131,6 +131,13 @@
               sameElNode = sameElNode.previousElementSibling;
           } else if (sameElNode) {
               sameElNode = sameElNode.previousElementSibling;
+          }
+      }
+
+      for(var i = 0; i < thisClass.length; i++){
+          if(thisClass[i]==''){
+              thisClass.splice(i, 1);
+              i--;
           }
       }
 
@@ -379,3 +386,90 @@
             throw pathStr;
         }
   };
+
+  function queryUniqClass(selectors) {
+    // 记录当前层的所有元素的className
+    var allClass = [];
+    // 用来记录是否有uniqClass
+    var uniqClassCount = 0;
+    var dynaDomList = [];
+    var childHasOneChild = true;
+    // 用来记录孩子的孩子的数组
+    var childList = [];
+    // 先遍历记录当前层的所有元素的className
+    Array.prototype.forEach.call(selectors, function(item) {
+      var thisClassList = item.classList;
+      Array.prototype.push.apply(allClass, thisClassList);
+      // 如果每个子元素没有子元素，或者子元素不止一个
+      if (!item.children || (item.children && item.children.length !== 1)) {
+        childHasOneChild = false;
+        childList = [];
+      } else if (item.children && item.children.length === 1) {
+        childList.push(item.children[0]);
+      }
+    });
+    // 再做一次遍历
+    Array.prototype.forEach.call(selectors, function(item) {
+      // 遍历每个元素的className
+      // 同一个dom只记录该元素的第一个uniqclass
+      var hasUniqClass = false;
+      Array.prototype.forEach.call(item.classList, function(subItem) {
+        // 拷贝一个allClass数组，查询数组中含有的当前元素的当前class是否唯一（只考虑唯一的情况才算uniq）
+        var allClassCopy = Array.prototype.slice.call(allClass);
+        allClassCopy.splice(allClass.indexOf(subItem), 1)
+        // vt添加的样式class不能算在内
+        if (!AVOID_VT_CLASS.test(subItem) && allClassCopy.indexOf(subItem) === -1 && !hasUniqClass) {
+          hasUniqClass = true;
+          dynaDomList.push({'class': subItem});
+          createDynaMoveBlockList();
+          dynaMoveBlockList[uniqClassCount].show();
+          visualSelect._setMovePosition(item, dynaMoveBlockList[uniqClassCount].dom);
+          dynaMoveBlockList[uniqClassCount].dom.setAttribute('class', item.nodeName.toLowerCase() + '_' + subItem);
+          parentDom.appendChild(dynaMoveBlockList[uniqClassCount].dom);
+          uniqClassCount ++;
+        }
+      })
+    });
+    if (!dynaDomList.length && childHasOneChild) {
+      // 把子元素层的子元素（如果每个仅有一个子元素）代进去再算一遍
+      return queryUniqClass(childList)
+    } 
+    return dynaDomList;
+  }
+
+  // 多选一 抓取动态class元素
+  function grabDynaParam(range) {
+      // 范围元素
+      var rangeDom = document.querySelector(range);
+      // 子元素数组
+      var childDoms = rangeDom.children;
+      // 先销毁已添加的小块dynaMoveBlock，否则一直点抓取无限添加
+      dynaMoveBlockList.forEach(function(item, index){
+        item._super.clean();
+      })
+      dynaMoveBlockList = [];
+      while(childDoms.length === 1) {
+        childDoms = childDoms[0].children;
+      }
+      return queryUniqClass(childDoms);
+  }
+
+    /**
+   * if element is out of param range
+   * @param {*} element element
+   * @note element is out of similar element param range
+   */
+  function isOutOfSimEleRange(element) {
+    while (element) {
+        if (element.classList) {
+            for(var i = 0; i < element.classList.length; i++) {
+                if(element.classList[i].indexOf("dtm-web-visual-sim-elePara-range") !== -1) {
+                    return false;
+                }
+            }
+        }
+      element = element.parentNode;
+    }
+  
+    return true;
+  }
